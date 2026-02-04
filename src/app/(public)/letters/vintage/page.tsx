@@ -86,20 +86,20 @@ export default function VintageLetterPage() {
   );
 
   return (
-    <div className="min-h-screen py-8">
+    <div className="min-h-screen py-8 bg-[#1a1a1a]">
       <div className="max-w-4xl mx-auto px-4">
         {/* Controls */}
         <div className="mb-8 space-y-4">
-          <h1 className="font-mono text-xl text-gold tracking-widest">ARCHIVAL CORRESPONDENCE</h1>
-          <p className="font-mono text-xs text-muted">Generate classified documents in the style of the Ouroboros Foundation, circa 1942</p>
+          <h1 className="font-mono text-xl text-[#d4af37] tracking-widest">ARCHIVAL CORRESPONDENCE</h1>
+          <p className="font-mono text-xs text-[#888]">Generate classified documents in the style of the Ouroboros Foundation, circa 1942</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="form-label">Classification</label>
+              <label className="block font-mono text-xs text-[#888] mb-1">Classification</label>
               <select
                 value={letterContent.classification}
                 onChange={(e) => setLetterContent({ ...letterContent, classification: e.target.value })}
-                className="input"
+                className="w-full bg-[#2a2a2a] border border-[#444] text-[#eee] px-3 py-2 font-mono text-sm"
               >
                 <option value="EYES ONLY">EYES ONLY</option>
                 <option value="COVENANT SEALED">COVENANT SEALED</option>
@@ -110,47 +110,47 @@ export default function VintageLetterPage() {
               </select>
             </div>
             <div>
-              <label className="form-label">Recipient Name/Title</label>
+              <label className="block font-mono text-xs text-[#888] mb-1">Recipient Name/Title</label>
               <input
                 type="text"
                 value={letterContent.recipient}
                 onChange={(e) => setLetterContent({ ...letterContent, recipient: e.target.value })}
-                className="input"
+                className="w-full bg-[#2a2a2a] border border-[#444] text-[#eee] px-3 py-2 font-mono text-sm"
               />
             </div>
             <div>
-              <label className="form-label">Salutation</label>
+              <label className="block font-mono text-xs text-[#888] mb-1">Salutation</label>
               <input
                 type="text"
                 value={letterContent.salutation}
                 onChange={(e) => setLetterContent({ ...letterContent, salutation: e.target.value })}
-                className="input"
+                className="w-full bg-[#2a2a2a] border border-[#444] text-[#eee] px-3 py-2 font-mono text-sm"
               />
             </div>
             <div>
-              <label className="form-label">Closing</label>
+              <label className="block font-mono text-xs text-[#888] mb-1">Closing</label>
               <input
                 type="text"
                 value={letterContent.closing}
                 onChange={(e) => setLetterContent({ ...letterContent, closing: e.target.value })}
-                className="input"
+                className="w-full bg-[#2a2a2a] border border-[#444] text-[#eee] px-3 py-2 font-mono text-sm"
               />
             </div>
             <div className="md:col-span-2">
-              <label className="form-label">Letter Body</label>
+              <label className="block font-mono text-xs text-[#888] mb-1">Letter Body</label>
               <textarea
                 value={letterContent.body}
                 onChange={(e) => setLetterContent({ ...letterContent, body: e.target.value })}
-                className="input min-h-[120px]"
+                className="w-full bg-[#2a2a2a] border border-[#444] text-[#eee] px-3 py-2 font-mono text-sm min-h-[120px]"
               />
             </div>
             <div>
-              <label className="form-label">Sender Name/Title</label>
+              <label className="block font-mono text-xs text-[#888] mb-1">Sender Name/Title</label>
               <input
                 type="text"
                 value={letterContent.sender}
                 onChange={(e) => setLetterContent({ ...letterContent, sender: e.target.value })}
-                className="input"
+                className="w-full bg-[#2a2a2a] border border-[#444] text-[#eee] px-3 py-2 font-mono text-sm"
               />
             </div>
           </div>
@@ -158,7 +158,7 @@ export default function VintageLetterPage() {
           <button
             onClick={downloadLetter}
             disabled={downloading}
-            className="btn btn-primary"
+            className="bg-[#d4af37] text-[#1a1a1a] px-6 py-2 font-mono text-sm hover:bg-[#c4a030] disabled:opacity-50"
           >
             {downloading ? "GENERATING..." : "DOWNLOAD AS IMAGE"}
           </button>
@@ -373,7 +373,7 @@ export default function VintageLetterPage() {
           />
         </div>
 
-        <p className="text-center font-mono text-xs text-muted mt-4">
+        <p className="text-center font-mono text-xs text-[#666] mt-4">
           Right-click the letter to save as image, or use the download button above
         </p>
       </div>
