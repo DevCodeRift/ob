@@ -1,0 +1,16 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# Copy source files needed for migrations
+COPY drizzle.config.ts ./
+COPY src/lib/db ./src/lib/db
+COPY scripts ./scripts
+COPY tsconfig.json ./
+
+# Run migrations and seed
+CMD ["sh", "-c", "npx drizzle-kit push && npx tsx scripts/seed.ts"]

@@ -1,0 +1,2 @@
+ALTER TABLE "invitations" ADD COLUMN "rank_id" uuid;--> statement-breakpoint
+ALTER TABLE "invitations" ADD CONSTRAINT "invitations_rank_id_ranks_id_fk" FOREIGN KEY ("rank_id") REFERENCES "public"."ranks"("id") ON DELETE set null ON UPDATE no action;
