@@ -106,6 +106,7 @@ const SAMPLE_BODIES = {
 
 export default function VintageLetterPage() {
   const letterRef = useRef<HTMLDivElement>(null);
+  const templateRef = useRef<HTMLDivElement>(null);
   const [documentType, setDocumentType] = useState<keyof typeof DOCUMENT_TYPES>("internal");
   const [letterContent, setLetterContent] = useState({
     recipient: "Adept",
@@ -123,6 +124,7 @@ export default function VintageLetterPage() {
     includeLatinFooter: true,
   });
   const [downloading, setDownloading] = useState(false);
+  const [downloadingBg, setDownloadingBg] = useState(false);
 
   const docConfig = DOCUMENT_TYPES[documentType];
 
@@ -139,6 +141,10 @@ export default function VintageLetterPage() {
     const prefix = documentType === "pressRelease" ? "PR" : documentType === "decree" ? "DC" : "OBF";
     return `${prefix}-${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}-${Math.floor(Math.random() * 9000) + 1000}`;
   }, [documentType]);
+
+  // US Letter size at 150 DPI = 1275 x 1650 px
+  const BG_WIDTH = 1275;
+  const BG_HEIGHT = 1650;
 
   function handleDocumentTypeChange(type: keyof typeof DOCUMENT_TYPES) {
     setDocumentType(type);
@@ -169,6 +175,32 @@ export default function VintageLetterPage() {
       alert("Failed to generate image. Please take a screenshot instead.");
     } finally {
       setDownloading(false);
+    }
+  }
+
+  async function downloadBackground() {
+    if (!templateRef.current) return;
+    setDownloadingBg(true);
+
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(templateRef.current, {
+        backgroundColor: null,
+        scale: 1,
+        useCORS: true,
+        width: BG_WIDTH,
+        height: BG_HEIGHT,
+      });
+
+      const link = document.createElement("a");
+      link.download = `ouroboros-template-${documentType}-${Date.now()}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch (error) {
+      console.error("Failed to download background:", error);
+      alert("Failed to generate background. Please try again.");
+    } finally {
+      setDownloadingBg(false);
     }
   }
 
@@ -353,13 +385,23 @@ export default function VintageLetterPage() {
             </div>
           </div>
 
-          <button
-            onClick={downloadLetter}
-            disabled={downloading}
-            className="btn btn-primary"
-          >
-            {downloading ? "GENERATING..." : "DOWNLOAD AS IMAGE"}
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={downloadLetter}
+              disabled={downloading}
+              className="btn btn-primary"
+            >
+              {downloading ? "GENERATING..." : "DOWNLOAD AS IMAGE"}
+            </button>
+            <button
+              onClick={downloadBackground}
+              disabled={downloadingBg}
+              className="btn btn-primary"
+              style={{ background: "#5a4a2a" }}
+            >
+              {downloadingBg ? "GENERATING..." : "DOWNLOAD BACKGROUND (for Google Docs)"}
+            </button>
+          </div>
         </div>
 
         {/* The Letter */}
@@ -670,6 +712,243 @@ export default function VintageLetterPage() {
         <p className="text-center font-mono text-xs text-muted mt-4">
           Right-click the letter to save as image, or use the download button above
         </p>
+      </div>
+
+      {/* Hidden offscreen template for background export — US Letter 8.5x11" at 150 DPI */}
+      <div style={{ position: "fixed", left: "-9999px", top: 0 }}>
+        <div
+          ref={templateRef}
+          className="relative"
+          style={{
+            width: `${BG_WIDTH}px`,
+            height: `${BG_HEIGHT}px`,
+            background: "linear-gradient(135deg, #f5e6c8 0%, #e8d4a8 25%, #f2e2bc 50%, #e5d0a0 75%, #f0deb5 100%)",
+            fontFamily: "'Courier New', Courier, monospace",
+            color: "#2c2416",
+            overflow: "hidden",
+          }}
+        >
+          {/* Paper texture */}
+          <div
+            className="absolute inset-0 pointer-events-none opacity-30"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter2'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter2)'/%3E%3C/svg%3E")`,
+            }}
+          />
+
+          {/* Watermark */}
+          {letterContent.showWatermark && (
+            <div
+              className="absolute pointer-events-none flex items-center justify-center"
+              style={{
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                opacity: 0.06,
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/FNP_blog_uroboro_1.png"
+                alt=""
+                width={700}
+                height={700}
+                style={{ filter: "grayscale(100%)" }}
+              />
+            </div>
+          )}
+
+          {/* Coffee stain */}
+          <div
+            className="absolute opacity-10 pointer-events-none"
+            style={{
+              width: "200px",
+              height: "200px",
+              borderRadius: "50%",
+              background: "radial-gradient(ellipse at center, #8b6914 0%, transparent 70%)",
+              top: "15%",
+              right: "10%",
+            }}
+          />
+
+          {/* Classification stamp top */}
+          {docConfig.showClassification && (
+            <div
+              className="absolute text-center"
+              style={{
+                top: "35px",
+                left: "50%",
+                transform: "translateX(-50%) rotate(-3deg)",
+                border: "4px solid #8b0000",
+                padding: "8px 35px",
+                color: "#8b0000",
+                fontWeight: "bold",
+                fontSize: "24px",
+                letterSpacing: "5px",
+              }}
+            >
+              {letterContent.classification}
+            </div>
+          )}
+
+          {/* Logo */}
+          <div style={{ textAlign: "center", marginTop: "100px", marginBottom: "8px" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/FNP_blog_uroboro_1.png"
+              alt=""
+              width={120}
+              height={120}
+              style={{ filter: "contrast(1.2)", display: "inline-block" }}
+            />
+          </div>
+
+          {/* Header */}
+          <div style={{ textAlign: "center", marginBottom: "30px" }}>
+            <div
+              style={{
+                fontSize: "26px",
+                letterSpacing: "8px",
+                marginBottom: "8px",
+                fontWeight: "bold",
+              }}
+            >
+              THE OUROBOROS FOUNDATION
+            </div>
+            <div
+              style={{
+                fontSize: "14px",
+                letterSpacing: "5px",
+                color: "#5a4a2a",
+                fontStyle: "italic",
+                marginBottom: "8px",
+              }}
+            >
+              &ldquo;THAT WHICH CONSUMES ITSELF SHALL BE REBORN&rdquo;
+            </div>
+            <div
+              style={{
+                fontSize: "13px",
+                letterSpacing: "4px",
+                color: "#7a6a4a",
+              }}
+            >
+              {letterContent.department.toUpperCase()}
+            </div>
+            <div
+              style={{
+                width: "420px",
+                height: "3px",
+                background: "linear-gradient(90deg, transparent, #8b7355, transparent)",
+                margin: "20px auto",
+              }}
+            />
+            <div
+              style={{
+                fontSize: "16px",
+                letterSpacing: "5px",
+                color: "#6a5a3a",
+                fontWeight: "bold",
+              }}
+            >
+              {docConfig.subtitle}
+            </div>
+          </div>
+
+          {/* Wax Seal */}
+          {letterContent.showSeal && (
+            <div
+              className="absolute flex items-center justify-center"
+              style={{
+                bottom: "120px",
+                right: "80px",
+                width: "140px",
+                height: "140px",
+                borderRadius: "50%",
+                background: "radial-gradient(circle at 30% 30%, #8b2500, #5c1a00 50%, #3d1100)",
+                boxShadow: "inset 0 3px 6px rgba(255,255,255,0.2), inset 0 -3px 6px rgba(0,0,0,0.3), 3px 3px 12px rgba(0,0,0,0.4)",
+                overflow: "hidden",
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/FNP_blog_uroboro_1.png"
+                alt=""
+                width={90}
+                height={90}
+                style={{ filter: "brightness(1.5) contrast(0.8)", opacity: 0.7 }}
+              />
+            </div>
+          )}
+
+          {/* Bottom classification stamp */}
+          {docConfig.showClassification && (
+            <div
+              className="absolute text-center"
+              style={{
+                bottom: "35px",
+                left: "50%",
+                transform: "translateX(-50%) rotate(2deg)",
+                border: "4px solid #8b0000",
+                padding: "8px 35px",
+                color: "#8b0000",
+                fontWeight: "bold",
+                fontSize: "24px",
+                letterSpacing: "5px",
+              }}
+            >
+              {letterContent.classification}
+            </div>
+          )}
+
+          {/* Latin footer */}
+          {letterContent.includeLatinFooter && !docConfig.showClassification && (
+            <div
+              className="absolute text-center"
+              style={{
+                bottom: "40px",
+                left: "50%",
+                transform: "translateX(-50%)",
+                fontSize: "16px",
+                letterSpacing: "6px",
+                color: "#6a5a3a",
+                fontStyle: "italic",
+              }}
+            >
+              {letterContent.latinMotto} &bull; ANNO DOMINI MCMXLII
+            </div>
+          )}
+
+          {/* Fold lines */}
+          <div
+            className="absolute left-0 right-0 pointer-events-none"
+            style={{
+              top: "33%",
+              height: "1px",
+              background: "linear-gradient(90deg, transparent, rgba(139,115,85,0.3), transparent)",
+            }}
+          />
+          <div
+            className="absolute left-0 right-0 pointer-events-none"
+            style={{
+              top: "66%",
+              height: "1px",
+              background: "linear-gradient(90deg, transparent, rgba(139,115,85,0.3), transparent)",
+            }}
+          />
+
+          {/* Corner wear */}
+          <div
+            className="absolute pointer-events-none"
+            style={{
+              top: 0,
+              right: 0,
+              width: "80px",
+              height: "80px",
+              background: "linear-gradient(135deg, transparent 50%, rgba(139,115,85,0.2) 50%)",
+            }}
+          />
+        </div>
       </div>
     </div>
   );
