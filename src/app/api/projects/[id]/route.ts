@@ -166,7 +166,7 @@ export async function PATCH(
       );
     }
 
-    if (session.user.clearanceLevel < 5) {
+    if (!session.user.isAdmin && session.user.clearanceLevel < 5) {
       const [assignment] = await db
         .select()
         .from(projectAssignments)
@@ -249,7 +249,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (session.user.clearanceLevel < 5) {
+    if (!session.user.isAdmin && session.user.clearanceLevel < 5) {
       return NextResponse.json(
         { error: "Only Archmagos can expunge projects" },
         { status: 403 }

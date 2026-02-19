@@ -79,7 +79,7 @@ export async function POST(
       );
     }
 
-    if (session.user.clearanceLevel < 4) {
+    if (!session.user.isAdmin && session.user.clearanceLevel < 4) {
       const [myAssignment] = await db
         .select()
         .from(projectAssignments)
@@ -184,7 +184,7 @@ export async function DELETE(
       );
     }
 
-    if (session.user.clearanceLevel < 4) {
+    if (!session.user.isAdmin && session.user.clearanceLevel < 4) {
       const [myAssignment] = await db
         .select()
         .from(projectAssignments)

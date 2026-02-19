@@ -33,14 +33,15 @@ export default function AdminDepartmentsPage() {
   const [expandedDept, setExpandedDept] = useState<string | null>(null);
 
   const clearance = session?.user?.clearanceLevel ?? 0;
+  const isAdmin = session?.user?.isAdmin || clearance >= 5;
 
   useEffect(() => {
-    if (clearance < 5) {
+    if (!isAdmin) {
       router.push("/dashboard");
       return;
     }
     fetchDepartments();
-  }, [clearance, router]);
+  }, [isAdmin, router]);
 
   async function fetchDepartments() {
     try {

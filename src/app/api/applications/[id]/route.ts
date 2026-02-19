@@ -16,7 +16,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (session.user.clearanceLevel < 4) {
+    if (!session.user.isAdmin && session.user.clearanceLevel < 4) {
       return NextResponse.json(
         { error: "Insufficient clearance" },
         { status: 403 }
@@ -72,7 +72,8 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (session.user.clearanceLevel < 4) {
+    const isAdmin = session.user.isAdmin || session.user.clearanceLevel >= 4;
+    if (!isAdmin) {
       return NextResponse.json(
         { error: "Insufficient clearance" },
         { status: 403 }
@@ -110,6 +111,13 @@ export async function PATCH(
 
     let createdUser = null;
     if (status === "approved") {
+      if (application.status === "approved") {
+        return NextResponse.json(
+          { error: "Application has already been approved" },
+          { status: 400 }
+        );
+      }
+
       if (!application.username || !application.passwordHash) {
         return NextResponse.json(
           { error: "Application does not have credentials. Cannot approve." },
@@ -129,6 +137,19 @@ export async function PATCH(
         );
       }
 
+      const userEmail = application.email || `${application.username}@ouroboros.foundation`;
+      const [existingEmail] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, userEmail));
+
+      if (existingEmail) {
+        return NextResponse.json(
+          { error: "Email address is already in use by another account" },
+          { status: 400 }
+        );
+      }
+
       let clearanceLevel = 1;
       if (application.requestedRankId) {
         const [rank] = await db
@@ -144,7 +165,7 @@ export async function PATCH(
         .insert(users)
         .values({
           username: application.username,
-          email: application.email || `${application.username}@ouroboros.foundation`,
+          email: userEmail,
           passwordHash: application.passwordHash,
           displayName: application.proposedName,
           title: application.proposedTitle,
@@ -179,8 +200,9 @@ export async function PATCH(
     });
   } catch (error) {
     console.error("Application update error:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to update application" },
+      { error: `Failed to update application: ${message}` },
       { status: 500 }
     );
   }

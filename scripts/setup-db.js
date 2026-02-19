@@ -96,6 +96,16 @@ CREATE TABLE IF NOT EXISTS project_access_rules (
 );
 CREATE INDEX IF NOT EXISTS idx_access_rules_project ON project_access_rules(project_id);
 CREATE INDEX IF NOT EXISTS idx_access_rules_type ON project_access_rules(access_type);
+
+-- Admin designation system
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin boolean DEFAULT false NOT NULL;
+
+-- Add ouroboros_sovereign to serpentius_clearance enum if missing
+DO $$ BEGIN
+    ALTER TYPE serpentius_clearance ADD VALUE IF NOT EXISTS 'ouroboros_sovereign' BEFORE 'ophidian_apex';
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 `;
 
 async function main() {

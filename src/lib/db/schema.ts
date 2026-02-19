@@ -168,6 +168,7 @@ export const users = pgTable(
     profileImage: text("profile_image"),
     bio: text("bio"),
     specializations: text("specializations").array(),
+    isAdmin: boolean("is_admin").default(false).notNull(),
     isActive: boolean("is_active").default(true).notNull(),
     isVerified: boolean("is_verified").default(false).notNull(),
     lastLoginAt: timestamp("last_login_at"),

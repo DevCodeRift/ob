@@ -7,6 +7,7 @@ declare module "next-auth" {
       id: string;
       username: string;
       clearanceLevel: number;
+      isAdmin: boolean;
       departmentId: string | null;
       title: string | null;
       designation: string | null;
@@ -17,6 +18,7 @@ declare module "next-auth" {
     id: string;
     username: string;
     clearanceLevel: number;
+    isAdmin: boolean;
     departmentId: string | null;
     title: string | null;
     designation: string | null;
@@ -28,6 +30,7 @@ declare module "next-auth/jwt" {
     id: string;
     username: string;
     clearanceLevel: number;
+    isAdmin: boolean;
     departmentId: string | null;
     title: string | null;
     designation: string | null;

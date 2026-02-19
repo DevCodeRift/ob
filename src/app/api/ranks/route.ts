@@ -53,7 +53,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (session.user.clearanceLevel < 5) {
+    if (!session.user.isAdmin && session.user.clearanceLevel < 5) {
       return NextResponse.json(
         { error: "Insufficient clearance" },
         { status: 403 }

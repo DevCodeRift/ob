@@ -14,7 +14,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (session.user.clearanceLevel < 4) {
+    if (!session.user.isAdmin && session.user.clearanceLevel < 4) {
       return NextResponse.json(
         { error: "Insufficient clearance" },
         { status: 403 }
@@ -113,7 +113,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (session.user.clearanceLevel < 4) {
+    if (!session.user.isAdmin && session.user.clearanceLevel < 4) {
       return NextResponse.json(
         { error: "Insufficient clearance" },
         { status: 403 }
@@ -206,7 +206,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (session.user.clearanceLevel < 4) {
+    if (!session.user.isAdmin && session.user.clearanceLevel < 4) {
       return NextResponse.json(
         { error: "Insufficient clearance" },
         { status: 403 }

@@ -28,6 +28,8 @@ export async function GET(
     const userClearance = session.user.clearanceLevel;
     const isOwnProfile = session.user.id === id;
 
+    const isViewerAdmin = session.user.isAdmin || userClearance >= 5;
+
     const [userData] = await db
       .select({
         id: users.id,
@@ -37,6 +39,7 @@ export async function GET(
         title: users.title,
         designation: users.designation,
         clearanceLevel: users.clearanceLevel,
+        isAdmin: users.isAdmin,
         profileImage: users.profileImage,
         bio: users.bio,
         specializations: users.specializations,
@@ -59,9 +62,10 @@ export async function GET(
 
     const user = {
       ...userData,
-      email: isOwnProfile || userClearance >= 5 ? userData.email : null,
-      lastLoginAt: userClearance >= 4 ? userData.lastLoginAt : null,
-      createdAt: userClearance >= 4 ? userData.createdAt : null,
+      email: isOwnProfile || isViewerAdmin ? userData.email : null,
+      isAdmin: isViewerAdmin ? userData.isAdmin : undefined,
+      lastLoginAt: userClearance >= 4 || isViewerAdmin ? userData.lastLoginAt : null,
+      createdAt: userClearance >= 4 || isViewerAdmin ? userData.createdAt : null,
     };
 
     const assignedProjects = await db
@@ -138,7 +142,7 @@ export async function PATCH(
 
     const { id } = await params;
     const isOwnProfile = session.user.id === id;
-    const isAdmin = session.user.clearanceLevel >= 5;
+    const isAdmin = session.user.isAdmin || session.user.clearanceLevel >= 5;
 
     if (!isOwnProfile && !isAdmin) {
       return NextResponse.json({ error: "Not authorized" }, { status: 403 });
@@ -169,12 +173,26 @@ export async function PATCH(
     if (isAdmin) {
       for (const field of adminOnly) {
         if (body[field] !== undefined) {
+          if (field === "clearanceLevel") {
+            // Admins cannot set clearance equal to or above their own
+            if (body[field] >= session.user.clearanceLevel) {
+              return NextResponse.json(
+                { error: "Cannot set clearance equal to or above your own level" },
+                { status: 403 }
+              );
+            }
+          }
           if (field === "password") {
             updateData.passwordHash = await bcrypt.hash(body[field], 12);
           } else {
             updateData[field] = body[field];
           }
         }
+      }
+
+      // Only CL5 (Archmagos) can grant/revoke admin status
+      if (body.isAdmin !== undefined && session.user.clearanceLevel >= 5) {
+        updateData.isAdmin = body.isAdmin;
       }
     }
 
@@ -190,6 +208,7 @@ export async function PATCH(
         title: users.title,
         designation: users.designation,
         clearanceLevel: users.clearanceLevel,
+        isAdmin: users.isAdmin,
         isActive: users.isActive,
       });
 

@@ -41,6 +41,7 @@ interface User {
   title: string | null;
   designation: string | null;
   clearanceLevel: number;
+  isAdmin: boolean;
   primaryDepartmentId: string | null;
   departmentName: string | null;
   departmentIcon: string | null;
@@ -75,6 +76,7 @@ export default function AdminUserEditPage() {
     designation: "",
     clearanceLevel: 0,
     primaryDepartmentId: "",
+    isAdmin: false,
     isActive: true,
     isVerified: false,
     password: "",
@@ -86,17 +88,19 @@ export default function AdminUserEditPage() {
   });
 
   const clearance = session?.user?.clearanceLevel ?? 0;
+  const isAdmin = session?.user?.isAdmin || clearance >= 5;
+  const isArchmagos = clearance >= 5;
 
   useEffect(() => {
     if (status === "loading") return;
 
-    if (status === "unauthenticated" || clearance < 5) {
+    if (status === "unauthenticated" || !isAdmin) {
       router.push("/dashboard");
       return;
     }
 
     fetchData();
-  }, [status, clearance, router, userId]);
+  }, [status, isAdmin, router, userId]);
 
   async function fetchData() {
     try {
@@ -115,6 +119,7 @@ export default function AdminUserEditPage() {
           designation: userData.designation || "",
           clearanceLevel: userData.clearanceLevel || 0,
           primaryDepartmentId: userData.departmentId || "",
+          isAdmin: userData.isAdmin ?? false,
           isActive: userData.isActive ?? true,
           isVerified: userData.isVerified ?? false,
           password: "",
@@ -154,6 +159,10 @@ export default function AdminUserEditPage() {
         isActive: formData.isActive,
         isVerified: formData.isVerified,
       };
+
+      if (isArchmagos) {
+        updateData.isAdmin = formData.isAdmin;
+      }
 
       if (formData.password) {
         updateData.password = formData.password;
@@ -206,13 +215,12 @@ export default function AdminUserEditPage() {
     }
   }
 
-  async function handleRemoveMembership(membershipId: string) {
+  async function handleRemoveMembership(departmentId: string) {
     try {
-      const res = await fetch(`/api/users/${userId}/memberships`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ membershipId }),
-      });
+      const res = await fetch(
+        `/api/users/${userId}/memberships?departmentId=${departmentId}`,
+        { method: "DELETE" }
+      );
 
       if (res.ok) {
         fetchData();
@@ -223,6 +231,26 @@ export default function AdminUserEditPage() {
       }
     } catch (err) {
       setError("Failed to remove membership");
+    }
+  }
+
+  async function handleUpdateMembershipRank(departmentId: string, rankId: string) {
+    try {
+      const res = await fetch(`/api/users/${userId}/memberships`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ departmentId, rankId: rankId || null }),
+      });
+
+      if (res.ok) {
+        fetchData();
+        setSuccess("Rank updated");
+      } else {
+        const data = await res.json();
+        setError(data.error || "Failed to update rank");
+      }
+    } catch (err) {
+      setError("Failed to update rank");
     }
   }
 
@@ -354,12 +382,20 @@ export default function AdminUserEditPage() {
                     }
                     className="input w-full"
                   >
-                    <option value={0}>0 - Pending</option>
-                    <option value={1}>1 - Initiate</option>
-                    <option value={2}>2 - Acolyte</option>
-                    <option value={3}>3 - Adept</option>
-                    <option value={4}>4 - Magos</option>
-                    <option value={5}>5 - Archmagos</option>
+                    {[
+                      { value: 0, label: "0 - Pending" },
+                      { value: 1, label: "1 - Initiate" },
+                      { value: 2, label: "2 - Acolyte" },
+                      { value: 3, label: "3 - Adept" },
+                      { value: 4, label: "4 - Magos" },
+                      { value: 5, label: "5 - Archmagos" },
+                    ]
+                      .filter((opt) => opt.value < clearance)
+                      .map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
                   </select>
                 </div>
                 <div>
@@ -428,6 +464,28 @@ export default function AdminUserEditPage() {
                   — Identity confirmed
                 </span>
               </label>
+
+              {isArchmagos && (
+                <>
+                  <div className="border-t border-border-dark pt-4 mt-2" />
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.isAdmin}
+                      onChange={(e) =>
+                        setFormData({ ...formData, isAdmin: e.target.checked })
+                      }
+                      className="w-5 h-5 accent-gold"
+                    />
+                    <span className="font-mono text-sm text-gold">
+                      Administrator
+                    </span>
+                    <span className="font-mono text-xs text-muted">
+                      — Can manage users, applications, and departments
+                    </span>
+                  </label>
+                </>
+              )}
             </div>
           </div>
 
@@ -492,6 +550,16 @@ export default function AdminUserEditPage() {
                   {user.isActive ? "Active" : "Inactive"}
                 </span>
               </div>
+              <div className="flex justify-between">
+                <span className="font-mono text-xs text-muted">Admin</span>
+                <span
+                  className={`font-mono text-sm ${
+                    user.isAdmin ? "text-gold" : "text-muted"
+                  }`}
+                >
+                  {user.isAdmin ? "Yes" : "No"}
+                </span>
+              </div>
               {user.lastLoginAt && (
                 <div className="flex justify-between">
                   <span className="font-mono text-xs text-muted">
@@ -517,42 +585,63 @@ export default function AdminUserEditPage() {
                   No division affiliations
                 </p>
               ) : (
-                <div className="space-y-2">
-                  {user.divisionMemberships.map((membership) => (
-                    <div
-                      key={membership.id}
-                      className="flex items-center justify-between p-3 border border-border-dark"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span
-                          className="text-xl"
-                          style={{ color: membership.departmentColor }}
-                        >
-                          {membership.departmentIcon}
-                        </span>
-                        <div>
-                          <p
-                            className="font-mono text-sm"
-                            style={{ color: membership.departmentColor }}
-                          >
-                            {membership.departmentName}
-                          </p>
-                          {membership.rankName && (
-                            <p className="font-mono text-xs text-muted">
-                              {membership.rankName} (L{membership.rankClearance})
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleRemoveMembership(membership.id)}
-                        className="text-danger hover:text-danger-bright text-sm"
-                        title="Remove membership"
+                <div className="space-y-3">
+                  {user.divisionMemberships.map((membership) => {
+                    const deptRanks = ranks.filter(
+                      (r) => r.departmentId === membership.departmentId
+                    );
+                    return (
+                      <div
+                        key={membership.id}
+                        className="p-3 border border-border-dark space-y-2"
                       >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span
+                              className="text-xl"
+                              style={{ color: membership.departmentColor }}
+                            >
+                              {membership.departmentIcon}
+                            </span>
+                            <p
+                              className="font-mono text-sm"
+                              style={{ color: membership.departmentColor }}
+                            >
+                              {membership.departmentName}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() =>
+                              handleRemoveMembership(membership.departmentId)
+                            }
+                            className="text-danger hover:text-danger-bright text-sm"
+                            title="Remove membership"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                        {deptRanks.length > 0 && (
+                          <select
+                            value={membership.rankId || ""}
+                            onChange={(e) =>
+                              handleUpdateMembershipRank(
+                                membership.departmentId,
+                                e.target.value
+                              )
+                            }
+                            className="input w-full text-sm"
+                          >
+                            <option value="">— No Rank —</option>
+                            {deptRanks.map((rank) => (
+                              <option key={rank.id} value={rank.id}>
+                                {rank.name} (L{rank.clearanceLevel})
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 

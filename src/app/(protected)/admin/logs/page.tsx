@@ -24,14 +24,15 @@ export default function AdminLogsPage() {
   const [loading, setLoading] = useState(true);
 
   const clearance = session?.user?.clearanceLevel ?? 0;
+  const isAdmin = session?.user?.isAdmin || clearance >= 5;
 
   useEffect(() => {
-    if (clearance < 5) {
+    if (!isAdmin) {
       router.push("/dashboard");
       return;
     }
     setLoading(false);
-  }, [clearance, router]);
+  }, [isAdmin, router]);
 
   return (
     <div className="space-y-6">

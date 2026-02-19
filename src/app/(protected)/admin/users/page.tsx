@@ -14,6 +14,7 @@ interface User {
   title: string | null;
   designation: string | null;
   clearanceLevel: number;
+  isAdmin?: boolean;
   isActive: boolean;
   isVerified: boolean;
   lastLoginAt: string | null;
@@ -29,14 +30,15 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
 
   const clearance = session?.user?.clearanceLevel ?? 0;
+  const isAdmin = session?.user?.isAdmin || clearance >= 5;
 
   useEffect(() => {
-    if (clearance < 5) {
+    if (!isAdmin) {
       router.push("/dashboard");
       return;
     }
     fetchUsers();
-  }, [clearance, router]);
+  }, [isAdmin, router]);
 
   async function fetchUsers() {
     try {
@@ -116,11 +118,16 @@ export default function AdminUsersPage() {
                 return (
                   <tr key={user.id} className="hover:bg-elevated transition-colors">
                     <td className="px-4 py-3">
-                      <div>
+                      <div className="flex items-center gap-2">
                         <span className="font-mono text-primary">
                           {user.displayName}
                         </span>
-                        <span className="font-mono text-xs text-muted ml-2">
+                        {user.isAdmin && (
+                          <span className="font-mono text-[0.6rem] text-gold border border-gold/30 px-1.5 py-0.5">
+                            ADMIN
+                          </span>
+                        )}
+                        <span className="font-mono text-xs text-muted">
                           @{user.username}
                         </span>
                       </div>

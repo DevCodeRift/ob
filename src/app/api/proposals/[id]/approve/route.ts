@@ -46,7 +46,7 @@ export async function POST(
     }
 
     const clearance = session.user.clearanceLevel ?? 0;
-    if (clearance < 4) {
+    if (!session.user.isAdmin && clearance < 4) {
       return NextResponse.json(
         { error: "Clearance Level 4+ required to approve proposals" },
         { status: 403 }

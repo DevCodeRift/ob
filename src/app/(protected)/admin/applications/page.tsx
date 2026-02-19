@@ -51,14 +51,15 @@ export default function AdminApplicationsPage() {
   const [message, setMessage] = useState("");
 
   const clearance = session?.user?.clearanceLevel ?? 0;
+  const isAdmin = session?.user?.isAdmin || clearance >= 4;
 
   useEffect(() => {
-    if (clearance < 4) {
+    if (!isAdmin) {
       router.push("/dashboard");
       return;
     }
     fetchApplications();
-  }, [statusFilter, clearance, router]);
+  }, [statusFilter, isAdmin, router]);
 
   async function fetchApplications() {
     try {

@@ -21,9 +21,10 @@ export default function AdminPage() {
   const [stats, setStats] = useState<Stats | null>(null);
 
   const clearance = session?.user?.clearanceLevel ?? 0;
+  const isAdmin = session?.user?.isAdmin || clearance >= 5;
 
   useEffect(() => {
-    if (clearance < 5) {
+    if (!isAdmin) {
       router.push("/dashboard");
       return;
     }

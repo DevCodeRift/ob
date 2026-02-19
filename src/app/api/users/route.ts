@@ -15,6 +15,7 @@ export async function GET(request: Request) {
     }
 
     const userClearance = session.user.clearanceLevel;
+    const isViewerAdmin = session.user.isAdmin || userClearance >= 5;
     const { searchParams } = new URL(request.url);
     const search = searchParams.get("search");
     const departmentId = searchParams.get("department");
@@ -27,6 +28,7 @@ export async function GET(request: Request) {
         title: users.title,
         designation: users.designation,
         clearanceLevel: users.clearanceLevel,
+        isAdmin: users.isAdmin,
         profileImage: users.profileImage,
         bio: users.bio,
         specializations: users.specializations,
@@ -55,9 +57,10 @@ export async function GET(request: Request) {
 
     const usersList = usersData.map((user) => ({
       ...user,
-      bio: userClearance >= 3 ? user.bio : null,
-      specializations: userClearance >= 3 ? user.specializations : null,
-      lastLoginAt: userClearance >= 4 ? user.lastLoginAt : null,
+      bio: userClearance >= 3 || isViewerAdmin ? user.bio : null,
+      specializations: userClearance >= 3 || isViewerAdmin ? user.specializations : null,
+      isAdmin: isViewerAdmin ? user.isAdmin : undefined,
+      lastLoginAt: userClearance >= 4 || isViewerAdmin ? user.lastLoginAt : null,
     }));
 
     return NextResponse.json(usersList);
@@ -77,9 +80,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (session.user.clearanceLevel < 5) {
+    const isAdmin = session.user.isAdmin || session.user.clearanceLevel >= 5;
+    if (!isAdmin) {
       return NextResponse.json(
-        { error: "Insufficient clearance. Level 5 required." },
+        { error: "Admin access required." },
         { status: 403 }
       );
     }

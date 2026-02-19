@@ -11,6 +11,7 @@ interface NavItem {
   href: string;
   icon: string;
   minClearance?: number;
+  adminOnly?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -21,13 +22,14 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Letters", href: "/letters", icon: "✉" },
   { label: "Personnel", href: "/personnel", icon: "⚉", minClearance: 3 },
   { label: "Invitations", href: "/invitations", icon: "◇", minClearance: 4 },
-  { label: "Administration", href: "/admin", icon: "⚙", minClearance: 5 },
+  { label: "Administration", href: "/admin", icon: "⚙", adminOnly: true },
 ];
 
 export function Navigation() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const clearance = session?.user?.clearanceLevel ?? 0;
+  const isAdmin = session?.user?.isAdmin || clearance >= 5;
   const [isCovenantMember, setIsCovenantMember] = useState(false);
 
   useEffect(() => {
@@ -46,9 +48,10 @@ export function Navigation() {
 
   const visibleItems = isCovenantOnly
     ? [] // Hide all regular nav for covenant-only members
-    : NAV_ITEMS.filter(
-        (item) => !item.minClearance || clearance >= item.minClearance
-      );
+    : NAV_ITEMS.filter((item) => {
+        if (item.adminOnly) return isAdmin;
+        return !item.minClearance || clearance >= item.minClearance;
+      });
 
   return (
     <nav className="bg-panel border-r border-dark w-56 min-h-[calc(100vh-4rem)] py-4">

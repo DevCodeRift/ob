@@ -49,15 +49,16 @@ export default function AdminProposalsPage() {
   const [modalNotes, setModalNotes] = useState("");
 
   const clearance = session?.user?.clearanceLevel ?? 0;
+  const isAdmin = session?.user?.isAdmin || clearance >= 4;
 
   useEffect(() => {
     if (status === "loading") return;
-    if (status === "unauthenticated" || clearance < 4) {
+    if (status === "unauthenticated" || !isAdmin) {
       router.push("/dashboard");
       return;
     }
     fetchProposals();
-  }, [status, clearance, router]);
+  }, [status, isAdmin, router]);
 
   async function fetchProposals() {
     try {
